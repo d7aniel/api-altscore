@@ -14,7 +14,7 @@ app.get("/", (req: Request, res: Response) => {
 let sys: string = "navigation";
 app.get("/status", (req: Request, res: Response) => {
   let sistemas = ["navigation", "communications", "life_support", "engines", "deflector_shield"];
-  let sys = sistemas[Math.round(Math.random() * sistemas.length)];
+  sys = sistemas[Math.round(Math.random() * sistemas.length)];
   res.json({ damaged_system: sys });
 });
 
@@ -27,18 +27,22 @@ let info = {
 };
 type FaultySystemKey = keyof typeof info;
 app.get("/repair-bay", (req: Request, res: Response) => {
-  const htmlResponse = `<!DOCTYPE html>
+  if (typeof sys === "string" && sys in info) {
+    let systemCode = info[sys as FaultySystemKey]; // Casteo explícito para mayor claridad, aunque 'in' ya lo maneja.
+
+    const htmlResponse = `<!DOCTYPE html>
                         <html>
                             <head>
                                 <title>Repair</title>
                             </head>
                             <body>
-                                <div class="anchor-point">${info[sys as FaultySystemKey]}</div>
+                                <div class="anchor-point">${systemCode}</div>
                             </body>
                         </html>`;
 
-  res.setHeader("Content-Type", "text/html");
-  res.send(htmlResponse);
+    res.setHeader("Content-Type", "text/html");
+    res.send(htmlResponse);
+  }
 });
 app.post("/teapot", (req: Request, res: Response) => {
   res.status(418).send("I'm a teapot.");
