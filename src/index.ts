@@ -2,7 +2,8 @@ import express from "express";
 import { Request, Response } from "express";
 
 const app = express();
-const port = process.env.PORT || 8080; // Use environment variable or default to 3000
+// const port = process.env.PORT || 3001; // Use environment variable or default to 3000
+const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // Middleware to parse JSON request bodies
 app.use(express.json());
