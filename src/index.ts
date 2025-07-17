@@ -45,26 +45,12 @@ app.get("/repair-bay", (req: Request, res: Response) => {
     res.send(htmlResponse);
   }
 });
+
 app.post("/teapot", (req: Request, res: Response) => {
   res.status(418).send("I'm a teapot.");
 });
 
-// Pc = 10 //Megapascales
-
-// Pc = 10MPa
-// Tc = 500°C
-// vc = 0.0035m^3/kg
-
-// liquido saturado = 0.00105;
-// vapor saturado = 30;
-
-// Presion 0.05
-
-// MV/(ML+MV)
-
-// T1const = 30°c
-// 30/(0+30);
-app.get("/phaseA/phase-change-diagram", (req: Request, res: Response) => {
+app.get("/phase-change-diagram", (req: Request, res: Response) => {
   const pressureQuery = req.query.pressure as string;
   const pressure = parseFloat(pressureQuery);
   // --- Datos extraídos directamente de la imagen del diagrama P-V ---
@@ -81,7 +67,6 @@ app.get("/phaseA/phase-change-diagram", (req: Request, res: Response) => {
 
   let interpolatedVf: number | null = null;
   let interpolatedVg: number | null = null;
-  let phase: string = "unknown";
 
   if (isNaN(pressure)) {
     return res.status(400).json({ error: "Parámetro 'pressure' no válido. Debe ser un número." });
@@ -89,13 +74,11 @@ app.get("/phaseA/phase-change-diagram", (req: Request, res: Response) => {
 
   // Manejo de casos de borde y rango
   if (pressure < P1) {
-    phase = "below_interpolation_range";
     // Podrías decidir qué valores devolver aquí, quizás los de P1 o null
     interpolatedVf = null;
     interpolatedVg = null;
     console.warn(`Presión ${pressure} MPa está por debajo del rango de interpolación (${P1} MPa).`);
   } else if (pressure > P2_critical) {
-    phase = "supercritical_fluid";
     interpolatedVf = null; // No hay distinción entre vf y vg en el fluido supercrítico
     interpolatedVg = null;
     console.warn(`Presión ${pressure} MPa está por encima del punto crítico (${P2_critical} MPa).`);
@@ -103,20 +86,13 @@ app.get("/phaseA/phase-change-diagram", (req: Request, res: Response) => {
     // Exactamente en el punto de baja presión
     interpolatedVf = vf1;
     interpolatedVg = vg1;
-    phase = "saturated_liquid_vapor_low_pressure";
   } else if (pressure === P2_critical) {
     // Exactamente en el punto crítico
     interpolatedVf = vf2_critical;
     interpolatedVg = vg2_critical;
-    phase = "critical_point";
   } else {
-    // Realizar interpolación lineal para presiones dentro del rango [P1, P2_critical]
-    // Para vf:
     interpolatedVf = vf1 + ((pressure - P1) * (vf2_critical - vf1)) / (P2_critical - P1);
-    // Para vg:
     interpolatedVg = vg1 + ((pressure - P1) * (vg2_critical - vg1)) / (P2_critical - P1);
-
-    phase = "saturated_liquid_vapor";
   }
 
   res.json({
@@ -161,15 +137,15 @@ app.get("/phaseB/phase-change-diagram", (req: Request, res: Response) => {
   }
 });
 
-app.get("/phaseC/phase-change-diagram", (req: Request, res: Response) => {
-  let specific_volume_liquid: number = 0.0035;
-  let specific_volume_vapor: number = 0.0035;
+// app.get("/phaseC/phase-change-diagram", (req: Request, res: Response) => {
+//   let specific_volume_liquid: number = 0.0035;
+//   let specific_volume_vapor: number = 0.0035;
 
-  res.json({
-    specific_volume_liquid: specific_volume_liquid,
-    specific_volume_vapor: specific_volume_vapor,
-  });
-});
+//   res.json({
+//     specific_volume_liquid: specific_volume_liquid,
+//     specific_volume_vapor: specific_volume_vapor,
+//   });
+// });
 
 app.listen(port, () => {
   console.log(`Server is listening on port ${port}`);
