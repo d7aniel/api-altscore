@@ -64,7 +64,68 @@ app.post("/teapot", (req: Request, res: Response) => {
 
 // T1const = 30°c
 // 30/(0+30);
-app.get("/phase-change-diagram", (req: Request, res: Response) => {
+app.get("/phaseA/phase-change-diagram", (req: Request, res: Response) => {
+  const pressureQuery = req.query.pressure as string;
+  const pressure = parseFloat(pressureQuery);
+  // --- Datos extraídos directamente de la imagen del diagrama P-V ---
+  // Punto 1: Baja presión (en la isoterma de 30°C)
+  const P1 = 0.05; // MPa
+  const vf1 = 0.00105; // m^3/kg
+  const vg1 = 30.0; // m^3/kg
+
+  // Punto 2: Punto Crítico (donde vf = vg = vc)
+  const P2_critical = 10.0; // MPa
+  const vf2_critical = 0.0035; // m^3/kg
+  const vg2_critical = 0.0035; // m^3/kg
+  // --- Fin de datos extraídos ---
+
+  let interpolatedVf: number | null = null;
+  let interpolatedVg: number | null = null;
+  let phase: string = "unknown";
+
+  if (isNaN(pressure)) {
+    return res.status(400).json({ error: "Parámetro 'pressure' no válido. Debe ser un número." });
+  }
+
+  // Manejo de casos de borde y rango
+  if (pressure < P1) {
+    phase = "below_interpolation_range";
+    // Podrías decidir qué valores devolver aquí, quizás los de P1 o null
+    interpolatedVf = null;
+    interpolatedVg = null;
+    console.warn(`Presión ${pressure} MPa está por debajo del rango de interpolación (${P1} MPa).`);
+  } else if (pressure > P2_critical) {
+    phase = "supercritical_fluid";
+    interpolatedVf = null; // No hay distinción entre vf y vg en el fluido supercrítico
+    interpolatedVg = null;
+    console.warn(`Presión ${pressure} MPa está por encima del punto crítico (${P2_critical} MPa).`);
+  } else if (pressure === P1) {
+    // Exactamente en el punto de baja presión
+    interpolatedVf = vf1;
+    interpolatedVg = vg1;
+    phase = "saturated_liquid_vapor_low_pressure";
+  } else if (pressure === P2_critical) {
+    // Exactamente en el punto crítico
+    interpolatedVf = vf2_critical;
+    interpolatedVg = vg2_critical;
+    phase = "critical_point";
+  } else {
+    // Realizar interpolación lineal para presiones dentro del rango [P1, P2_critical]
+    // Para vf:
+    interpolatedVf = vf1 + ((pressure - P1) * (vf2_critical - vf1)) / (P2_critical - P1);
+    // Para vg:
+    interpolatedVg = vg1 + ((pressure - P1) * (vg2_critical - vg1)) / (P2_critical - P1);
+
+    phase = "saturated_liquid_vapor";
+  }
+
+  res.json({
+    specific_volume_liquid: interpolatedVf,
+    specific_volume_vapor: interpolatedVg,
+  });
+});
+
+app.get("/phaseB/phase-change-diagram", (req: Request, res: Response) => {
   const pressureQuery = req.query.pressure as string;
   let pressure: number | null = null;
   let specific_volume_liquid: number = 0.0035;
@@ -78,24 +139,31 @@ app.get("/phase-change-diagram", (req: Request, res: Response) => {
     let l_min = 0.00105;
     let l_max = 0.0035;
 
-    // double slope = 1.0 * (output_end - output_start) / (input_end - input_start)
-    // output = output_start + slope * (input - input_start)
-
     pressure = parseFloat(pressureQuery);
     if (!isNaN(pressure)) {
-      let slope_liquido = (1.0 * (l_max - l_min)) / (p_max - p_min);
-      let slope_vapor = (1.0 * (v_max - v_min)) / (p_max - p_min);
-      // specific_volume_liquid = l_min + slope_liquido * (pressure - p_min);
-      // specific_volume_vapor = v_min + slope_vapor * (pressure - p_min);
-      // specific_volume_liquid = Math.round(specific_volume_liquid * 100000) / 100000;
-      // specific_volume_vapor = Math.round(specific_volume_vapor * 100000) / 100000;
+      if (pressure != 10) {
+        let slope_liquido = (l_max - l_min) / (p_max - p_min);
+        let slope_vapor = (v_max - v_min) / (p_max - p_min);
+        specific_volume_liquid = l_min + slope_liquido * (pressure - p_min);
+        specific_volume_vapor = v_min + slope_vapor * (pressure - p_min);
+      }
       console.log(`Parámetro 'pressure' es: "${pressure}"`);
     } else {
       console.warn(`Parámetro 'pressure' no válido: "${pressureQuery}"`);
     }
+
+    res.json({
+      specific_volume_liquid: specific_volume_liquid,
+      specific_volume_vapor: specific_volume_vapor,
+    });
   } else {
-    console.warn("Parámetro 'pressure' no proporcionado.");
+    res.json({});
   }
+});
+
+app.get("/phaseC/phase-change-diagram", (req: Request, res: Response) => {
+  let specific_volume_liquid: number = 0.0035;
+  let specific_volume_vapor: number = 0.0035;
 
   res.json({
     specific_volume_liquid: specific_volume_liquid,
