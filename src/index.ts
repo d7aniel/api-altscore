@@ -85,10 +85,10 @@ app.get("/phase-change-diagram", (req: Request, res: Response) => {
     if (!isNaN(pressure)) {
       let slope_liquido = (1.0 * (l_max - l_min)) / (p_max - p_min);
       let slope_vapor = (1.0 * (v_max - v_min)) / (p_max - p_min);
-      specific_volume_liquid = l_min + slope_liquido * (pressure - p_min);
-      specific_volume_vapor = v_min + slope_vapor * (pressure - p_min);
-      specific_volume_liquid = Math.round(specific_volume_liquid * 100000) / 100000;
-      specific_volume_vapor = Math.round(specific_volume_vapor * 100000) / 100000;
+      // specific_volume_liquid = l_min + slope_liquido * (pressure - p_min);
+      // specific_volume_vapor = v_min + slope_vapor * (pressure - p_min);
+      // specific_volume_liquid = Math.round(specific_volume_liquid * 100000) / 100000;
+      // specific_volume_vapor = Math.round(specific_volume_vapor * 100000) / 100000;
     } else {
       console.warn(`Parámetro 'pressure' no válido: "${pressureQuery}"`);
     }
