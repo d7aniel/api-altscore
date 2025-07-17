@@ -89,6 +89,7 @@ app.get("/phase-change-diagram", (req: Request, res: Response) => {
       // specific_volume_vapor = v_min + slope_vapor * (pressure - p_min);
       // specific_volume_liquid = Math.round(specific_volume_liquid * 100000) / 100000;
       // specific_volume_vapor = Math.round(specific_volume_vapor * 100000) / 100000;
+      console.log(`Parámetro 'pressure' es: "${pressure}"`);
     } else {
       console.warn(`Parámetro 'pressure' no válido: "${pressureQuery}"`);
     }
